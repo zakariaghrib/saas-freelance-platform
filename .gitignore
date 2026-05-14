@@ -1,0 +1,23 @@
+# 1. Sécurité et variables d'environnement
+.env
+*.pem
+*.key
+
+# 2. Backend (Spring Boot / Maven)
+backend/target/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+*.class
+*.jar
+*.log
+
+# 3. Frontend (React / Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.eslintcache
+
+# 4. Fichiers systèmes et éditeurs (VS Code, IntelliJ)
+.idea/
+.vscode/
+*.DS_Store

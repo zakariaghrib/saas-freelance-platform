@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # Service 1 : La base de données PostgreSQL
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: saas_postgres
+    environment:
+      POSTGRES_USER: saas_admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: saas_freelance_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Service 2 : L'interface pgAdmin pour visualiser tes tables
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: saas_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@saas.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres_db
+    restart: unless-stopped
+
+# Volume pour que les données ne s'effacent pas quand on arrête le conteneur
+volumes:
+  postgres_data:
