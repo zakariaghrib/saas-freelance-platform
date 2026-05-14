@@ -21,3 +21,5 @@ frontend/.eslintcache
 .idea/
 .vscode/
 *.DS_Store
+# Fichiers de test HTTP locaux
+*.http
