@@ -3,12 +3,15 @@ package com.saas.backend.controller;
 import com.saas.backend.dto.LoginRequest;
 import com.saas.backend.entity.User;
 import com.saas.backend.repository.UserRepository;
+import com.saas.backend.security.JwtUtils; // Import de notre nouvelle machine à Token
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap; // Pour créer la réponse JSON
+import java.util.Map;     // Pour créer la réponse JSON
 import java.util.Optional;
 
 @RestController
@@ -21,6 +24,9 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtils jwtUtils; // Injection de l'outil JWT
 
     /**
      * Endpoint pour l'inscription d'un nouvel utilisateur
@@ -43,7 +49,7 @@ public class AuthController {
     }
 
     /**
-     * Endpoint pour la connexion (Login)
+     * Endpoint pour la connexion (Login) avec génération de JWT
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
@@ -55,9 +61,16 @@ public class AuthController {
 
             // 2. Comparaison du mot de passe saisi avec le hash stocké
             if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-                // Succès : Pour l'instant on renvoie un message simple
-                // Plus tard, nous renverrons un Token JWT ici
-                return ResponseEntity.ok("Connexion réussie ! Bienvenue " + user.getFullName());
+
+                // 3. Succès : Génération du Token JWT
+                String token = jwtUtils.generateToken(user);
+
+                // 4. Préparation de la réponse au format JSON pour React
+                Map<String, String> response = new HashMap<>();
+                response.put("message", "Connexion réussie !");
+                response.put("token", token);
+                response.put("role", user.getRole().toString());
+                return ResponseEntity.ok(response);
             } else {
                 // Erreur de mot de passe
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Erreur : Mot de passe incorrect.");

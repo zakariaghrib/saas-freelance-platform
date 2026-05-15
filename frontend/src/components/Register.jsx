@@ -37,7 +37,8 @@ export default function Register() {
       {/* SECTION GAUCHE */}
       <div className="flex flex-col justify-center w-full px-8 py-12 lg:w-1/2 sm:px-16 xl:px-24 relative">
         
-        <div className="absolute top-8 left-8 sm:left-16 xl:left-24 flex items-center gap-2 font-bold text-xl tracking-tight cursor-default">
+        {/* CORRECTION RESPONSIVE ICI : mb-10 sur mobile, absolute sur écran large (lg) */}
+        <div className="mb-10 lg:absolute lg:top-8 lg:left-8 xl:left-24 lg:mb-0 flex items-center gap-2 font-bold text-xl tracking-tight cursor-default">
           <span className="text-red-500 text-2xl">✦</span> saasflow
         </div>
 
