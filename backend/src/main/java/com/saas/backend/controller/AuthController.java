@@ -1,23 +1,27 @@
 package com.saas.backend.controller;
 
-import com.saas.backend.dto.LoginRequest;
 import com.saas.backend.entity.User;
 import com.saas.backend.repository.UserRepository;
-import com.saas.backend.security.JwtUtils; // Import de notre nouvelle machine à Token
+import com.saas.backend.security.JwtUtils; // NOUVEAU : Importation de votre usine à Tokens
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap; // Pour créer la réponse JSON
-import java.util.Map;     // Pour créer la réponse JSON
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*") // Indispensable pour la connexion avec React
+@CrossOrigin(origins = "*")
 public class AuthController {
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
     @Autowired
     private UserRepository userRepository;
@@ -26,58 +30,58 @@ public class AuthController {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private JwtUtils jwtUtils; // Injection de l'outil JWT
+    private JwtUtils jwtUtils; // NOUVEAU : Injection de JwtUtils
 
-    /**
-     * Endpoint pour l'inscription d'un nouvel utilisateur
-     */
+    // --- 1. LA ROUTE DE CONNEXION ---
+    @PostMapping("/login")
+    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        User user = userRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new RuntimeException("Erreur : Utilisateur non trouvé."));
+
+        // CORRECTION ICI : On utilise JwtUtils pour fabriquer le VRAI Token
+        String jwt = jwtUtils.generateToken(user);
+
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("token", jwt);
+        responseBody.put("role", user.getRole());
+        responseBody.put("nom", user.getNomComplet());
+
+        return ResponseEntity.ok(responseBody);
+    }
+
+    // --- 2. LA ROUTE D'INSCRIPTION ---
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user) {
-        // 1. Vérification de l'unicité de l'email
-        if (userRepository.existsByEmail(user.getEmail())) {
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+        // On vérifie si l'email est déjà pris
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body("Erreur : Cet email est déjà utilisé !");
         }
 
-        // 2. Sécurisation du mot de passe avec BCrypt
-        String hashedPassword = passwordEncoder.encode(user.getPassword());
-        user.setPassword(hashedPassword);
+        // On crypte le mot de passe pour que le Login fonctionne plus tard !
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        // 3. Enregistrement en base de données
+        // Si aucun rôle n'est choisi, on met CLIENT par défaut
+        if (user.getRole() == null || user.getRole().isEmpty()) {
+            user.setRole("CLIENT");
+        }
+
         userRepository.save(user);
 
-        return ResponseEntity.ok("Utilisateur créé avec succès !");
+        return ResponseEntity.ok("Utilisateur inscrit avec succès !");
     }
+}
 
-    /**
-     * Endpoint pour la connexion (Login) avec génération de JWT
-     */
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        // 1. Recherche de l'utilisateur par email
-        Optional<User> userOptional = userRepository.findByEmail(loginRequest.getEmail());
-
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-
-            // 2. Comparaison du mot de passe saisi avec le hash stocké
-            if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-
-                // 3. Succès : Génération du Token JWT
-                String token = jwtUtils.generateToken(user);
-
-                // 4. Préparation de la réponse au format JSON pour React
-                Map<String, String> response = new HashMap<>();
-                response.put("message", "Connexion réussie !");
-                response.put("token", token);
-                response.put("role", user.getRole().toString());
-                return ResponseEntity.ok(response);
-            } else {
-                // Erreur de mot de passe
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Erreur : Mot de passe incorrect.");
-            }
-        } else {
-            // L'utilisateur n'existe pas
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Erreur : Aucun compte trouvé avec cet email.");
-        }
-    }
+// Classe utilitaire pour le Login
+class LoginRequest {
+    private String email;
+    private String password;
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 }

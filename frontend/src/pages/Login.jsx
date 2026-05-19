@@ -22,10 +22,15 @@ export default function Login() {
     
     try {
       const response = await axios.post('http://localhost:8080/api/auth/login', formData);
-      const { token, role } = response.data;
       
+      // MODIFICATION ICI : On récupère token, role et nom
+      const { token, role, nom } = response.data;
+      
+      // On sauvegarde tout dans le navigateur
       localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
+      localStorage.setItem('userRole', role); 
+      if(nom) localStorage.setItem('userName', nom);
+      localStorage.setItem('userEmail', formData.email);
       
       navigate('/dashboard');
       
@@ -42,7 +47,6 @@ export default function Login() {
       {/* SECTION GAUCHE */}
       <div className="flex flex-col justify-center w-full px-8 py-12 lg:w-1/2 sm:px-16 xl:px-24 relative">
         
-        {/* CORRECTION RESPONSIVE ICI : mb-10 sur mobile, absolute sur écran large (lg) */}
         <div className="mb-10 lg:absolute lg:top-8 lg:left-8 xl:left-24 lg:mb-0 flex items-center gap-2 font-bold text-xl tracking-tight cursor-default">
           <span className="text-red-500 text-2xl">✦</span> saasflow
         </div>

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 export default function Register() {
   const [formData, setFormData] = useState({
-    fullName: '',
+    nomComplet: '', // CORRECTION ICI : nomComplet au lieu de fullName
     email: '',
     password: '',
     role: 'FREELANCER'
@@ -24,7 +24,8 @@ export default function Register() {
       const response = await axios.post('http://localhost:8080/api/auth/register', formData);
       setMessage(response.data);
       setIsError(false);
-      setFormData({ fullName: '', email: '', password: '', role: 'FREELANCER' });
+      // CORRECTION ICI AUSSI
+      setFormData({ nomComplet: '', email: '', password: '', role: 'FREELANCER' });
     } catch (error) {
       setMessage(error.response?.data || "Une erreur s'est produite lors de l'inscription.");
       setIsError(true);
@@ -37,7 +38,6 @@ export default function Register() {
       {/* SECTION GAUCHE */}
       <div className="flex flex-col justify-center w-full px-8 py-12 lg:w-1/2 sm:px-16 xl:px-24 relative">
         
-        {/* CORRECTION RESPONSIVE ICI : mb-10 sur mobile, absolute sur écran large (lg) */}
         <div className="mb-10 lg:absolute lg:top-8 lg:left-8 xl:left-24 lg:mb-0 flex items-center gap-2 font-bold text-xl tracking-tight cursor-default">
           <span className="text-red-500 text-2xl">✦</span> saasflow
         </div>
@@ -53,9 +53,9 @@ export default function Register() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <input 
-                name="fullName" type="text" required placeholder="Nom complet"
+                name="nomComplet" type="text" required placeholder="Nom complet" // CORRECTION DU NAME ICI
                 className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all"
-                value={formData.fullName} onChange={handleChange}
+                value={formData.nomComplet} onChange={handleChange} // CORRECTION DU VALUE ICI
               />
             </div>
 

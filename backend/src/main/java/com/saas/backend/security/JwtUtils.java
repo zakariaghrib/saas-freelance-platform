@@ -25,7 +25,7 @@ public class JwtUtils {
         return Jwts.builder()
                 .setSubject(user.getEmail()) // L'identifiant principal (Email)
                 .claim("role", user.getRole()) // On note son rôle (FREELANCER ou CLIENT)
-                .claim("fullName", user.getFullName()) // On note son nom pour le Frontend
+                .claim("fullName", user.getNomComplet()) // On note son nom pour le Frontend
                 .setIssuedAt(new Date()) // Date et heure de création
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs)) // Expire demain
                 .signWith(key) // On scelle le bracelet avec notre clé secrète

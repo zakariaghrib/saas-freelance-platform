@@ -1,21 +1,19 @@
 import axios from 'axios';
 
-// 1. On crée une instance personnalisée d'Axios
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api', // On pointe vers notre Spring Boot
+  baseURL: 'http://localhost:8080/api', // Adaptez le port si nécessaire
 });
 
-// 2. On ajoute l'"Assistant Personnel" (L'Intercepteur)
+// L'intercepteur magique : Il s'exécute une fraction de seconde AVANT chaque requête
 api.interceptors.request.use(
   (config) => {
-    // On va chercher le Token dans le localStorage
+    // On lit le token le plus récent directement dans le navigateur
     const token = localStorage.getItem('token');
     
-    // Si on a un Token, on l'attache à la requête comme un Badge VIP
+    // Si on a un token, on l'attache au colis
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`; 
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
-    
     return config;
   },
   (error) => {

@@ -8,9 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -21,50 +21,53 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtils jwtUtils;
 
+    // Assurez-vous d'avoir bien la classe CustomUserDetailsService dans votre dossier security
     @Autowired
-    private CustomUserDetailsService customUserDetailsService;
+    private UserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
         try {
-            // 1. On essaie de récupérer le Token dans la requête
+            // 1. On récupère le Token de la requête
             String jwt = parseJwt(request);
 
-            // 2. Si on a un Token et qu'il est valide (pas faux, pas expiré)
-            if (jwt != null && jwtUtils.validateToken(jwt)) {
-
-                // On extrait l'email du Token
+            // 2. Si on a trouvé un token, on l'analyse
+            if (jwt != null) {
                 String email = jwtUtils.getEmailFromToken(jwt);
 
-                // On charge le profil de l'utilisateur depuis la base
-                UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+                // 3. Si on a trouvé un email et que l'utilisateur n'est pas déjà authentifié
+                if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // On crée le "Pass" officiel de sécurité
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    // On charge l'utilisateur depuis la base de données
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                // On donne le Pass au videur de Spring Security : "C'est bon, laisse-le passer !"
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    // On crée le "Badge" d'accès officiel pour Spring Security
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    // On dit à Spring Security : "C'est bon, il a le droit d'entrer !"
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
         } catch (Exception e) {
-            System.out.println("Impossible de définir l'authentification de l'utilisateur : " + e.getMessage());
+            // Si le token est expiré ou invalide, on ne crash pas, on l'affiche juste dans la console
+            System.err.println("Impossible d'authentifier l'utilisateur : " + e.getMessage());
         }
 
-        // On laisse la requête continuer son chemin
+        // On laisse passer la requête au prochain filtre
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * Petite méthode pour extraire le Token de l'en-tête HTTP
-     * Convention standard : le token est caché dans un header "Authorization" et commence par "Bearer "
-     */
+    // Petite fonction pour nettoyer la chaîne et enlever le "Bearer "
     private String parseJwt(HttpServletRequest request) {
         String headerAuth = request.getHeader("Authorization");
-        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
-            return headerAuth.substring(7); // On coupe les 7 premiers caractères ("Bearer ")
+
+        if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
+            return headerAuth.substring(7);
         }
         return null;
     }
