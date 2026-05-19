@@ -5,7 +5,8 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients'; // <-- Notre nouvelle page !
-
+import Factures from './pages/Factures';
+import MonProjet from './pages/MonProjet';
 // Importation des Composants de structure
 import Layout from './components/Layout';
 
@@ -26,7 +27,8 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />
-          
+          <Route path="/factures" element={<Factures />} />
+          <Route path="/mon-projet" element={<MonProjet />} />
           {/* Plus tard, nous ajouterons les autres pages ici, par exemple : */}
           {/* <Route path="/factures" element={<Factures />} /> */}
           {/* <Route path="/parametres" element={<Parametres />} /> */}

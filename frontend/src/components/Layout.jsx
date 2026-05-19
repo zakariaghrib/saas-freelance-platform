@@ -1,24 +1,24 @@
 import { useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-// N'oubliez pas d'importer PanelLeftClose et PanelLeftOpen pour nos nouveaux boutons !
-import { LayoutDashboard, Users, FileText, Settings, LogOut, Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+// MODIFICATION : Ajout de Briefcase pour le menu du client
+import { LayoutDashboard, Users, FileText, Settings, LogOut, Menu, X, PanelLeftClose, PanelLeftOpen, Briefcase } from 'lucide-react';
 
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const userRole = localStorage.getItem('role');
+  
+  // MODIFICATION : On récupère le rôle et le nom
+  const userRole = localStorage.getItem('userRole') || 'CLIENT';
+  const userName = localStorage.getItem('userName') || 'Utilisateur';
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  // NOUVEAU : État pour gérer la Sidebar réduite sur PC
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
+    localStorage.clear(); // On nettoie tout d'un coup
     navigate('/login');
   };
 
-  // On adapte le style du lien selon si la sidebar est ouverte ou réduite
   const navItemClass = (path) => `
     flex items-center py-3 rounded-xl text-sm font-medium transition-all
     ${location.pathname === path 
@@ -37,10 +37,7 @@ export default function Layout() {
         md:translate-x-0 md:static
         ${isDesktopCollapsed ? 'md:w-20' : 'md:w-64'} 
       `}>
-        {/* En-tête Sidebar */}
         <div className={`h-20 flex items-center border-b border-gray-100 ${isDesktopCollapsed ? 'justify-center' : 'justify-between px-6'}`}>
-          
-          {/* Logo texte (Caché si réduit) */}
           {!isDesktopCollapsed && (
             <div className="flex items-center">
               <span className="text-red-500 text-2xl mr-2">✦</span>
@@ -48,10 +45,8 @@ export default function Layout() {
             </div>
           )}
           
-          {/* Logo icône seule (Affiché si réduit) */}
           {isDesktopCollapsed && <span className="text-red-500 text-2xl">✦</span>}
 
-          {/* Bouton pour Réduire/Agrandir sur PC */}
           <button 
             onClick={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
             className="hidden md:block text-gray-400 hover:text-gray-900 focus:outline-none transition-colors"
@@ -60,7 +55,6 @@ export default function Layout() {
             {isDesktopCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
           </button>
 
-          {/* Bouton Fermer sur Mobile */}
           <button 
             onClick={() => setIsMobileMenuOpen(false)}
             className="md:hidden text-gray-500 hover:text-gray-900 focus:outline-none"
@@ -79,18 +73,39 @@ export default function Layout() {
           )}
           
           <div className="px-2 space-y-1">
+            {/* COMMUN : Le Dashboard */}
             <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className={navItemClass('/dashboard')} title="Dashboard">
               <LayoutDashboard size={20} className="shrink-0" />
               {!isDesktopCollapsed && <span>Dashboard</span>}
             </Link>
-            <Link to="/clients" onClick={() => setIsMobileMenuOpen(false)} className={navItemClass('/clients')} title="Clients">
-              <Users size={20} className="shrink-0" />
-              {!isDesktopCollapsed && <span>Clients</span>}
-            </Link>
-            <Link to="/factures" onClick={() => setIsMobileMenuOpen(false)} className={navItemClass('/factures')} title="Facturation">
-              <FileText size={20} className="shrink-0" />
-              {!isDesktopCollapsed && <span>Facturation</span>}
-            </Link>
+
+            {/* --- ZONE FREELANCER UNIQUEMENT --- */}
+            {userRole === 'FREELANCER' && (
+              <>
+                <Link to="/clients" onClick={() => setIsMobileMenuOpen(false)} className={navItemClass('/clients')} title="Clients">
+                  <Users size={20} className="shrink-0" />
+                  {!isDesktopCollapsed && <span>Clients</span>}
+                </Link>
+                <Link to="/factures" onClick={() => setIsMobileMenuOpen(false)} className={navItemClass('/factures')} title="Facturation">
+                  <FileText size={20} className="shrink-0" />
+                  {!isDesktopCollapsed && <span>Facturation</span>}
+                </Link>
+              </>
+            )}
+
+            {/* --- ZONE CLIENT UNIQUEMENT --- */}
+            {userRole === 'CLIENT' && (
+              <>
+                <Link to="/mon-projet" onClick={() => setIsMobileMenuOpen(false)} className={navItemClass('/mon-projet')} title="Mon Projet">
+                  <Briefcase size={20} className="shrink-0" />
+                  {!isDesktopCollapsed && <span>Mon Projet</span>}
+                </Link>
+                <Link to="/mes-factures" onClick={() => setIsMobileMenuOpen(false)} className={navItemClass('/mes-factures')} title="Mes Factures">
+                  <FileText size={20} className="shrink-0" />
+                  {!isDesktopCollapsed && <span>Mes Factures</span>}
+                </Link>
+              </>
+            )}
           </div>
           
           {!isDesktopCollapsed ? (
@@ -111,7 +126,8 @@ export default function Layout() {
         <div className="p-4 border-t border-gray-100">
           {!isDesktopCollapsed && (
             <div className="px-4 py-3 mb-2 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
-              <p className="text-xs text-gray-500">Connecté en tant que</p>
+              {/* Affichage du nom et du rôle */}
+              <p className="text-xs text-gray-500 truncate">{userName}</p>
               <p className="text-sm font-black text-gray-900 truncate">{userRole}</p>
             </div>
           )}
