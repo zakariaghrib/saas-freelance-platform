@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Briefcase, Check, X, RefreshCw, ChevronRight } from 'lucide-react';
+import { Briefcase, Check, X, RefreshCw, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../api/axiosConfig';
 
 export default function ProjetsFreelance() {
@@ -144,28 +145,41 @@ export default function ProjetsFreelance() {
                     </div>
                   )}
 
-                  {/* CAS 2 : La mission est acceptée -> On donne le contrôle sur le % d'avancement */}
+                  {/* CAS 2 : La mission est acceptée -> Bouton Gérer + Avancement */}
                   {projet.statutDemande === 'ACCEPTE' && (
-                    <div className="flex items-center justify-end gap-3">
-                      <div className="flex items-center gap-1.5">
-                        <input 
-                          type="number" 
-                          min="0" 
-                          max="100"
-                          placeholder={projet.avancement}
-                          value={editingAvancement[projet.id] !== undefined ? editingAvancement[projet.id] : ''}
-                          onChange={(e) => handleAvancementChange(projet.id, e.target.value)}
-                          className="w-16 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <span className="font-bold text-slate-400 text-xs">%</span>
-                      </div>
-                      <button 
-                        onClick={() => handleUpdateAvancement(projet)}
-                        className="p-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                        title="Enregistrer l'avancement"
+                    <div className="flex items-center justify-end gap-4">
+                      
+                      {/* BOUTON GÉRER */}
+                      <Link 
+                        to={`/projets/${projet.id}`}
+                        className="flex items-center gap-1.5 bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-black transition-all shadow-sm"
                       >
-                        <RefreshCw size={14} />
-                      </button>
+                        <Eye size={16} /> Gérer
+                      </Link>
+
+                      {/* JAUGE D'AVANCEMENT */}
+                      <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
+                        <div className="flex items-center gap-1.5">
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max="100"
+                            placeholder={projet.avancement}
+                            value={editingAvancement[projet.id] !== undefined ? editingAvancement[projet.id] : ''}
+                            onChange={(e) => handleAvancementChange(projet.id, e.target.value)}
+                            className="w-16 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="font-bold text-slate-400 text-xs">%</span>
+                        </div>
+                        <button 
+                          onClick={() => handleUpdateAvancement(projet)}
+                          className="p-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                          title="Enregistrer l'avancement"
+                        >
+                          <RefreshCw size={14} />
+                        </button>
+                      </div>
+
                     </div>
                   )}
 
