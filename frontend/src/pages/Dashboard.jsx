@@ -1,40 +1,50 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, Users, PieChart as PieChartIcon, Bell } from 'lucide-react';
+import { TrendingUp, Activity, PieChart as PieChartIcon, Bell } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import api from '../api/axiosConfig';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ chiffreAffaires: '0.00 MAD', nouveauxClients: 0, message: '' });
+  const [projets, setProjets] = useState([]);
   const [chartData, setChartData] = useState([]);
-  const [totalFactures, setTotalFactures] = useState(0);
+  const [totalProjets, setTotalProjets] = useState(0);
+  const [avancementMoyen, setAvancementMoyen] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+
+  const userEmail = localStorage.getItem('userEmail');
+  const userRole = localStorage.getItem('userRole') || 'CLIENT';
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [statsRes, facturesRes] = await Promise.all([
-          api.get('/dashboard/stats'),
-          api.get('/factures')
-        ]);
+        let data = [];
+        if (userRole === 'CLIENT') {
+          const res = await api.get(`/projets/mon-projet?email=${userEmail}`);
+          data = res.data;
+        } else {
+          const res = await api.get('/projets');
+          data = res.data.filter(p => p.freelancer?.email === userEmail && p.statutDemande === 'ACCEPTE');
+        }
 
-        setStats(statsRes.data);
+        setProjets(data);
+        setTotalProjets(data.length);
 
-        // --- ANALYSE DES DONNÉES ---
-        const factures = facturesRes.data;
-        setTotalFactures(factures.length);
-        
-        const nbPayees = factures.filter(f => f.statut === 'PAYEE').length;
-        const nbEnAttente = factures.filter(f => f.statut === 'EN_ATTENTE').length;
-        const nbAnnulees = factures.filter(f => f.statut === 'ANNULEE').length;
+        // --- ANALYSE DES DONNÉES POUR LES STATS ---
+        const avancementTotal = data.reduce((acc, p) => acc + (p.avancement || 0), 0);
+        setAvancementMoyen(data.length > 0 ? Math.round(avancementTotal / data.length) : 0);
 
-        // Palette de couleurs "Entreprise" (Plus sobres et élégantes)
-        const data = [
-          { name: 'Payées', value: nbPayees, color: '#059669' }, // Vert émeraude profond
-          { name: 'En Attente', value: nbEnAttente, color: '#d97706' }, // Ambre riche
-          { name: 'Annulées', value: nbAnnulees, color: '#dc2626' } // Rouge classique
+        // --- ANALYSE POUR LE GRAPHIQUE RECHARTS ---
+        const nbTermines = data.filter(p => p.avancement === 100 || p.statut === 'TERMINE').length;
+        const nbEnCours = data.filter(p => p.avancement > 0 && p.avancement < 100).length;
+        const nbNouveaux = data.filter(p => p.avancement === 0).length;
+
+        // Palette de couleurs "Entreprise"
+        const chartColors = [
+          { name: 'Terminés', value: nbTermines, color: '#059669' }, // Vert émeraude profond
+          { name: 'En cours', value: nbEnCours, color: '#2563eb' },  // Bleu royal
+          { name: 'Nouveaux', value: nbNouveaux, color: '#d97706' }  // Ambre riche
         ];
 
-        setChartData(data.filter(item => item.value > 0));
+        setChartData(chartColors.filter(item => item.value > 0));
         setIsLoading(false);
 
       } catch (error) {
@@ -43,8 +53,8 @@ export default function Dashboard() {
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    if (userEmail) fetchDashboardData();
+  }, [userEmail, userRole]);
 
   if (isLoading) {
     return (
@@ -57,7 +67,6 @@ export default function Dashboard() {
   }
 
   return (
-    // Fond légèrement crème/gris pour un rendu plus luxueux
     <div className="p-4 md:p-10 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700 bg-stone-50/30 min-h-screen">
       
       {/* --- EN-TÊTE --- */}
@@ -65,29 +74,28 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 uppercase font-serif">
           Vue d'ensemble
         </h1>
-        <p className="text-slate-500 mt-1 text-sm">Suivez l'évolution de vos activités en temps réel.</p>
+        <p className="text-slate-500 mt-1 text-sm">Suivez l'évolution de vos projets en temps réel.</p>
       </div>
 
       {/* --- NOTIFICATION SUBTILE --- */}
       <div className="bg-amber-50/50 border border-amber-100/50 text-amber-900 p-4 rounded-xl text-sm font-medium shadow-sm flex items-center gap-3">
         <Bell size={18} className="text-amber-600" />
-        {stats.message || "Statistiques connectées et à jour."}
+        Synchronisation des projets réussie. Espace de travail à jour ! 🚀
       </div>
 
       {/* --- CARTES DE STATISTIQUES (Style Métallique/Premium) --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Carte Chiffre d'Affaires */}
+        {/* Carte Total Projets */}
         <div className="relative overflow-hidden bg-gradient-to-br from-white to-slate-50 p-8 rounded-2xl border border-slate-200 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] transition-all hover:shadow-lg">
           <div className="flex justify-between items-start relative z-10">
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Chiffre d'Affaires</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Projets</p>
               <h2 className="text-4xl font-black text-slate-800 tracking-tighter">
-                {stats.chiffreAffaires}
+                {totalProjets}
               </h2>
-              {/* Petite mention factice pour le design pro */}
-              <p className="text-xs text-emerald-600 font-semibold mt-2">
-                +8.2% <span className="text-slate-400 font-normal">vs. mois dernier</span>
+              <p className="text-xs text-blue-600 font-semibold mt-2">
+                Activité en cours <span className="text-slate-400 font-normal">sur la plateforme</span>
               </p>
             </div>
             <div className="bg-slate-800 p-3 rounded-xl text-white shadow-md">
@@ -96,20 +104,20 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Carte Clients */}
+        {/* Carte Progression Moyenne */}
         <div className="relative overflow-hidden bg-gradient-to-br from-white to-slate-50 p-8 rounded-2xl border border-slate-200 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] transition-all hover:shadow-lg">
           <div className="flex justify-between items-start relative z-10">
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Clients</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Progression Globale</p>
               <h2 className="text-4xl font-black text-slate-800 tracking-tighter">
-                {stats.nouveauxClients}
+                {avancementMoyen}%
               </h2>
               <p className="text-xs text-emerald-600 font-semibold mt-2">
-                Nouveau client actif <span className="text-slate-400 font-normal">récemment</span>
+                Avancement moyen <span className="text-slate-400 font-normal">des missions actives</span>
               </p>
             </div>
             <div className="bg-slate-800 p-3 rounded-xl text-white shadow-md">
-              <Users size={24} />
+              <Activity size={24} />
             </div>
           </div>
         </div>
@@ -120,21 +128,21 @@ export default function Dashboard() {
       <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-8">
         <div className="flex items-center gap-3 mb-8 border-b border-slate-100 pb-4">
           <PieChartIcon className="text-slate-400" size={20} />
-          <h3 className="text-base font-bold text-slate-700 uppercase tracking-widest">Répartition des factures</h3>
+          <h3 className="text-base font-bold text-slate-700 uppercase tracking-widest">Répartition des Projets</h3>
         </div>
         
         {chartData.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-slate-400 text-sm italic bg-slate-50 rounded-xl border border-dashed border-slate-200">
-            Aucune donnée de facturation pour générer le graphique.
+            Aucune donnée de projet pour générer le graphique.
           </div>
         ) : (
           <div className="relative h-80 w-full">
             
-            {/* L'ASTUCE PRO : Le texte centré en absolu par dessus le graphique */}
+            {/* Le texte centré en absolu par dessus le graphique */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-5xl font-black text-slate-800">{totalFactures}</span>
+              <span className="text-5xl font-black text-slate-800">{totalProjets}</span>
               <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase mt-1 text-center leading-tight">
-                Factures<br/>Totales
+                Projets<br/>Actifs
               </span>
             </div>
 
@@ -144,11 +152,11 @@ export default function Dashboard() {
                   data={chartData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={90} // Plus grand pour faire un bel anneau
+                  innerRadius={90}
                   outerRadius={120}
-                  paddingAngle={3} // Espacement fin et élégant
+                  paddingAngle={3}
                   dataKey="value"
-                  stroke="none" // Enlève la bordure par défaut
+                  stroke="none"
                   animationDuration={1500}
                 >
                   {chartData.map((entry, index) => (
