@@ -45,8 +45,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // On laisse passer librement les requêtes vers auth (login, register)
-                        .requestMatchers("/api/auth/**").permitAll()
-                        // CORRECTION CRUCIALE : On laisse passer la requête "invisible" (OPTIONS) envoyée par React
+                        .requestMatchers("/api/auth/**", "/error", "/ws/**").permitAll()                        // CORRECTION CRUCIALE : On laisse passer la requête "invisible" (OPTIONS) envoyée par React
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Tout le reste est bloqué et nécessite un Token valide
                         .anyRequest().authenticated()
