@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate; // IMPORT WEBSOCKET
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -37,6 +38,10 @@ public class ProjetController {
 
     @Autowired
     private PdfService pdfService;
+
+    // NOUVEAU : Outil pour pousser les messages en temps réel
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     // ==========================================
     // --- GESTION DE BASE DES PROJETS ---
@@ -174,19 +179,26 @@ public class ProjetController {
         return ResponseEntity.ok(messageRepository.findByProjetOrderByDateEnvoiAsc(projet));
     }
 
+    // MODIFIÉ : Enregistre le message et le diffuse en temps réel
     @PostMapping("/{projetId}/messages")
     public ResponseEntity<?> createMessage(@PathVariable Long projetId, @RequestBody Message message) {
         Projet projet = projetRepository.findById(projetId).orElseThrow();
         message.setProjet(projet);
         message.setDateEnvoi(LocalDateTime.now());
-        return ResponseEntity.ok(messageRepository.save(message));
+
+        // 1. Sauvegarde dans la base de données
+        Message savedMessage = messageRepository.save(message);
+
+        // 2. Diffusion instantanée via WebSocket sur le salon spécifique du projet
+        messagingTemplate.convertAndSend("/topic/projets/" + projetId, savedMessage);
+
+        return ResponseEntity.ok(savedMessage);
     }
 
     // ==========================================
     // --- FACTURATION ET GÉNÉRATION PDF ---
     // ==========================================
 
-    // NOUVEAU : Envoyer la facture avec le prix défini
     @PutMapping("/{projetId}/facturer")
     public ResponseEntity<?> envoyerFacture(@PathVariable Long projetId, @RequestParam Double prix) {
         Projet projet = projetRepository.findById(projetId).orElseThrow();
